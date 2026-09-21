@@ -15,7 +15,11 @@ import {
   ArrowRight,
   Info,
   X,
-  Copy
+  Copy,
+  Lock,
+  Unlock,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { PipelineLayer, DiagnosticMode, IncidentInput } from '../types';
 import {
@@ -82,6 +86,19 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
   const [customErrorMode, setCustomErrorMode] = useState(false);
   const [selectedTxnFormatId, setSelectedTxnFormatId] = useState<string>('rep_internal');
   const [showTxnCatalogModal, setShowTxnCatalogModal] = useState(false);
+  const [showAdvancedTelemetry, setShowAdvancedTelemetry] = useState(false);
+
+  // Progressive Disclosure: Automatically reveal advanced telemetry if active fields exist or relevant layers are selected
+  const hasActiveAdvancedFields = Boolean(
+    input.traceparent ||
+    input.cloudflareRayId ||
+    input.clockFormat ||
+    input.pipelineLayer.includes('Layer 1') ||
+    input.pipelineLayer.includes('Layer 2') ||
+    input.errorCode.includes('52') ||
+    input.errorCode.toLowerCase().includes('cloudflare') ||
+    input.errorCode.toLowerCase().includes('trace')
+  );
 
   // Group error codes by category
   const groupedErrorCodes = useMemo(() => {
@@ -163,8 +180,13 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
               clientIdentity: '',
               endpointUrl: '',
               httpMethod: 'POST',
-              investigatedFacts: []
+              investigatedFacts: [],
+              traceparent: undefined,
+              cloudflareRayId: undefined,
+              clockFormat: undefined,
+              isTriageLocked: false
             });
+            setShowAdvancedTelemetry(false);
           }}
           className="text-xs text-slate-400 hover:text-slate-200 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 transition-all cursor-pointer self-start sm:self-center"
           title="Clear all form fields"
@@ -234,151 +256,193 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
 
         {/* Section 2: Error Code and Pipeline Layer */}
         <div className="p-5 sm:p-6 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-5 shadow-inner">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Field 2: Error Code / HTTP Status */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label htmlFor="error-code" className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 inline-flex items-center justify-center text-[10px] font-mono">2</span>
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Error Code / Status</span>
-                  <span className="text-rose-400">*</span>
-                </label>
-                <div className="flex items-center gap-1.5">
-                  {activeErrorCodeDef && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-slate-850 text-amber-300 border border-slate-700">
-                      {activeErrorCodeDef.category.split(' ')[0]}
+          {/* MTTR Optimization: Locked-In Triage Banner when Client Complaint Analyzer parsed successfully */}
+          {input.isTriageLocked ? (
+            <div className="bg-gradient-to-r from-blue-950/70 via-slate-900/90 to-indigo-950/60 border border-blue-500/40 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/40 mt-0.5">
+                  <Lock className="w-4 h-4 text-blue-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-blue-200 uppercase tracking-wide">
+                      Automated Pipeline Triage Locked
                     </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setCustomErrorMode(!customErrorMode)}
-                    className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors cursor-pointer font-medium"
-                  >
-                    {customErrorMode ? 'Select from catalog' : 'Custom'}
-                  </button>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      Bypassed Manual Select
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span>
+                      Active Domain: <strong className="text-white font-mono">{input.pipelineLayer.split(':')[0]}</strong>
+                    </span>
+                    <span className="text-slate-500">•</span>
+                    <span>
+                      Active Error: <strong className="text-amber-300 font-mono">{input.errorCode}</strong>
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Manual 48-item dropdown & layer radios programmatically collapsed to eliminate redundant data entry and accelerate MTTR.
+                  </p>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => onChange({ isTriageLocked: false })}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer transition-colors self-start sm:self-center shrink-0"
+                title="Unlock to manually alter the Error Code or Pipeline Layer"
+              >
+                <Unlock className="w-3.5 h-3.5 text-slate-400" />
+                <span>Unlock Fields</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Field 2: Error Code / HTTP Status */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="error-code" className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 inline-flex items-center justify-center text-[10px] font-mono">2</span>
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Error Code / Status</span>
+                    <span className="text-rose-400">*</span>
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    {activeErrorCodeDef && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-slate-850 text-amber-300 border border-slate-700">
+                        {activeErrorCodeDef.category.split(' ')[0]}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setCustomErrorMode(!customErrorMode)}
+                      className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors cursor-pointer font-medium"
+                    >
+                      {customErrorMode ? 'Select from catalog' : 'Custom'}
+                    </button>
+                  </div>
+                </div>
 
-              {customErrorMode ? (
-                <input
-                  id="error-code-custom"
-                  type="text"
-                  value={input.errorCode}
-                  onChange={(e) => onChange({ errorCode: e.target.value })}
-                  placeholder="e.g., 504 Gateway Timeout, ECONNRESET, SSL Handshake Failed"
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-mono"
-                />
-              ) : (
+                {customErrorMode ? (
+                  <input
+                    id="error-code-custom"
+                    type="text"
+                    value={input.errorCode}
+                    onChange={(e) => onChange({ errorCode: e.target.value })}
+                    placeholder="e.g., 504 Gateway Timeout, ECONNRESET, SSL Handshake Failed"
+                    className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-mono"
+                  />
+                ) : (
+                  <select
+                    id="error-code"
+                    value={input.errorCode}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      onChange({ errorCode: val });
+                      const matched = FULL_ERROR_CODE_CATALOG.find((c) => c.code === val);
+                      if (matched && !input.summary) {
+                        onChange({ errorCode: val, summary: matched.name });
+                      }
+                    }}
+                    className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-mono cursor-pointer"
+                  >
+                    <option value="">-- Select Error Code or Protocol Failure (48 Standard Codes) --</option>
+                    {(Object.entries(groupedErrorCodes) as [string, ErrorCodeDefinition[]][]).map(([category, codes]) => (
+                      <optgroup key={category} label={category} className="bg-slate-900 font-semibold text-slate-300">
+                        {codes.map((c) => (
+                          <option key={c.code} value={c.code} className="text-slate-100 font-normal">
+                            {c.code} — {c.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                )}
+
+                {/* Quick-Pick Popular Error Code Pills */}
+                <div className="flex flex-wrap items-center gap-1 pt-1">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase">Popular:</span>
+                  {POPULAR_ERROR_CODES.map((code) => (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => onChange({ errorCode: code })}
+                      className={`text-[11px] px-2 py-0.5 rounded-lg font-mono border transition-all cursor-pointer ${
+                        input.errorCode === code
+                          ? 'bg-amber-500/20 text-amber-200 border-amber-500/50 shadow-sm font-semibold'
+                          : 'bg-slate-900/90 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-800'
+                      }`}
+                    >
+                      {code.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Diagnostic Context for Selected Code */}
+                {activeErrorCodeDef && (
+                  <div className="mt-2 p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl text-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span className="font-semibold text-amber-400">{activeErrorCodeDef.code}: {activeErrorCodeDef.name}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">{activeErrorCodeDef.category}</span>
+                    </div>
+                    <p className="text-slate-400 text-[11px] leading-relaxed">
+                      {activeErrorCodeDef.description}
+                    </p>
+                    {activeErrorCodeDef.suggestedLayer && input.pipelineLayer !== activeErrorCodeDef.suggestedLayer && (
+                      <div className="pt-1.5 flex items-center justify-between border-t border-slate-800/60">
+                        <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                          <Info className="w-3.5 h-3.5 text-blue-400" />
+                          Suggested Domain: <span className="text-blue-300 font-medium">{activeErrorCodeDef.suggestedLayer.split(':')[0]}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onChange({ pipelineLayer: activeErrorCodeDef.suggestedLayer })}
+                          className="text-[11px] text-amber-400 hover:text-amber-300 font-medium underline decoration-dotted cursor-pointer"
+                        >
+                          Align Layer
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Field 3: Pipeline Layer */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="pipeline-layer" className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-300 inline-flex items-center justify-center text-[10px] font-mono">3</span>
+                    <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Pipeline Layer</span>
+                    <span className="text-rose-400">*</span>
+                  </label>
+                  <span className="text-[11px] text-slate-400">Demarcation domain</span>
+                </div>
+
                 <select
-                  id="error-code"
-                  value={input.errorCode}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    onChange({ errorCode: val });
-                    const matched = FULL_ERROR_CODE_CATALOG.find((c) => c.code === val);
-                    if (matched && !input.summary) {
-                      onChange({ errorCode: val, summary: matched.name });
-                    }
-                  }}
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-mono cursor-pointer"
+                  id="pipeline-layer"
+                  value={input.pipelineLayer}
+                  onChange={(e) => onChange({ pipelineLayer: e.target.value as PipelineLayer })}
+                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
                 >
-                  <option value="">-- Select Error Code or Protocol Failure (48 Standard Codes) --</option>
-                  {(Object.entries(groupedErrorCodes) as [string, ErrorCodeDefinition[]][]).map(([category, codes]) => (
-                    <optgroup key={category} label={category} className="bg-slate-900 font-semibold text-slate-300">
-                      {codes.map((c) => (
-                        <option key={c.code} value={c.code} className="text-slate-100 font-normal">
-                          {c.code} — {c.name}
-                        </option>
-                      ))}
-                    </optgroup>
+                  {PIPELINE_LAYERS.map((layer) => (
+                    <option key={layer} value={layer}>
+                      {layer}
+                    </option>
                   ))}
                 </select>
-              )}
 
-              {/* Quick-Pick Popular Error Code Pills */}
-              <div className="flex flex-wrap items-center gap-1 pt-1">
-                <span className="text-[10px] font-mono text-slate-400 uppercase">Popular:</span>
-                {POPULAR_ERROR_CODES.map((code) => (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => onChange({ errorCode: code })}
-                    className={`text-[11px] px-2 py-0.5 rounded-lg font-mono border transition-all cursor-pointer ${
-                      input.errorCode === code
-                        ? 'bg-amber-500/20 text-amber-200 border-amber-500/50 shadow-sm font-semibold'
-                        : 'bg-slate-900/90 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-800'
-                    }`}
-                  >
-                    {code.split(' ')[0]}
-                  </button>
-                ))}
-              </div>
-
-              {/* Diagnostic Context for Selected Code */}
-              {activeErrorCodeDef && (
-                <div className="mt-2 p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl text-xs space-y-1.5">
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span className="font-semibold text-amber-400">{activeErrorCodeDef.code}: {activeErrorCodeDef.name}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">{activeErrorCodeDef.category}</span>
-                  </div>
-                  <p className="text-slate-400 text-[11px] leading-relaxed">
-                    {activeErrorCodeDef.description}
-                  </p>
-                  {activeErrorCodeDef.suggestedLayer && input.pipelineLayer !== activeErrorCodeDef.suggestedLayer && (
-                    <div className="pt-1.5 flex items-center justify-between border-t border-slate-800/60">
-                      <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                        <Info className="w-3.5 h-3.5 text-blue-400" />
-                        Suggested Domain: <span className="text-blue-300 font-medium">{activeErrorCodeDef.suggestedLayer.split(':')[0]}</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => onChange({ pipelineLayer: activeErrorCodeDef.suggestedLayer })}
-                        className="text-[11px] text-amber-400 hover:text-amber-300 font-medium underline decoration-dotted cursor-pointer"
-                      >
-                        Align Layer
-                      </button>
-                    </div>
-                  )}
+                <div className="p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+                  {input.pipelineLayer.includes('Layer 1') && 'Domain boundary: Edge DNS, IdP SAML/OIDC SSO, and Client Network reachability.'}
+                  {input.pipelineLayer.includes('Layer 2') && 'Domain boundary: Kong/Envoy API Gateway, Bearer token claims, and OpenAPI JSON schema.'}
+                  {input.pipelineLayer.includes('Layer 3') && 'Domain boundary: S3/GCS asset retrieval, presigned URL signatures, and DB ingestion writes.'}
+                  {input.pipelineLayer.includes('Layer 4') && 'Domain boundary: RabbitMQ/Kafka queue workers, Kubernetes pod memory (OOM), and scratch disks.'}
+                  {input.pipelineLayer.includes('Layer 5') && 'Domain boundary: Outbound MTLS client certificates, downstream partner API endpoints, and NAT IP egress.'}
+                  {input.pipelineLayer.includes('Layer 6') && 'Domain boundary: Webhook dispatcher delivery, HMAC-SHA256 signatures, and partner listener timeouts.'}
                 </div>
-              )}
-            </div>
-
-            {/* Field 3: Pipeline Layer */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label htmlFor="pipeline-layer" className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-300 inline-flex items-center justify-center text-[10px] font-mono">3</span>
-                  <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Pipeline Layer</span>
-                  <span className="text-rose-400">*</span>
-                </label>
-                <span className="text-[11px] text-slate-400">Demarcation domain</span>
-              </div>
-
-              <select
-                id="pipeline-layer"
-                value={input.pipelineLayer}
-                onChange={(e) => onChange({ pipelineLayer: e.target.value as PipelineLayer })}
-                className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-              >
-                {PIPELINE_LAYERS.map((layer) => (
-                  <option key={layer} value={layer}>
-                    {layer}
-                  </option>
-                ))}
-              </select>
-
-              <div className="p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl text-[11px] text-slate-400 leading-relaxed">
-                {input.pipelineLayer.includes('Layer 1') && 'Domain boundary: Edge DNS, IdP SAML/OIDC SSO, and Client Network reachability.'}
-                {input.pipelineLayer.includes('Layer 2') && 'Domain boundary: Kong/Envoy API Gateway, Bearer token claims, and OpenAPI JSON schema.'}
-                {input.pipelineLayer.includes('Layer 3') && 'Domain boundary: S3/GCS asset retrieval, presigned URL signatures, and DB ingestion writes.'}
-                {input.pipelineLayer.includes('Layer 4') && 'Domain boundary: RabbitMQ/Kafka queue workers, Kubernetes pod memory (OOM), and scratch disks.'}
-                {input.pipelineLayer.includes('Layer 5') && 'Domain boundary: Outbound MTLS client certificates, downstream partner API endpoints, and NAT IP egress.'}
-                {input.pipelineLayer.includes('Layer 6') && 'Domain boundary: Webhook dispatcher delivery, HMAC-SHA256 signatures, and partner listener timeouts.'}
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Field 4: Telemetry Group */}
@@ -600,6 +664,110 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
                 />
               </div>
             </div>
+          </div>
+
+          {/* Progressive Disclosure: Advanced Telemetry & Distributed Tracing Fields */}
+          <div className="pt-2 border-t border-slate-850">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedTelemetry(!showAdvancedTelemetry)}
+                className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors cursor-pointer py-1"
+              >
+                {showAdvancedTelemetry || hasActiveAdvancedFields ? (
+                  <ChevronUp className="w-3.5 h-3.5 text-indigo-400" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 text-indigo-400" />
+                )}
+                <span>Advanced Telemetry & Clocks</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-mono">
+                  {hasActiveAdvancedFields ? 'Active Context' : 'Optional / Context-Driven'}
+                </span>
+              </button>
+
+              <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+                Traceparent • CF-Ray • Clock Format
+              </span>
+            </div>
+
+            {(showAdvancedTelemetry || hasActiveAdvancedFields) && (
+              <div className="mt-3 p-3.5 bg-slate-900/80 border border-indigo-950/80 rounded-xl space-y-3">
+                <div className="text-[11px] text-slate-400 leading-relaxed">
+                  Revealed dynamically for deep root-cause elimination across distributed edge boundaries.
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Traceparent (OpenTelemetry W3C) */}
+                  <div className="space-y-1">
+                    <label htmlFor="telemetry-traceparent" className="text-[11px] font-medium text-slate-300 flex items-center justify-between">
+                      <span>W3C Traceparent</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const hex = (len: number) => Array.from({ length: len }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+                          onChange({ traceparent: `00-${hex(32)}-${hex(16)}-01` });
+                        }}
+                        className="text-[10px] text-indigo-400 hover:text-indigo-300"
+                      >
+                        Gen
+                      </button>
+                    </label>
+                    <input
+                      id="telemetry-traceparent"
+                      type="text"
+                      value={input.traceparent || ''}
+                      onChange={(e) => onChange({ traceparent: e.target.value })}
+                      placeholder="00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+                      className="w-full font-mono text-[11px] bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  {/* Cloudflare Ray ID */}
+                  <div className="space-y-1">
+                    <label htmlFor="telemetry-cf-ray" className="text-[11px] font-medium text-slate-300 flex items-center justify-between">
+                      <span>Cloudflare Ray ID</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const hex = Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+                          const pops = ['SJC', 'IAD', 'LHR', 'FRA', 'ORD', 'AMS'];
+                          onChange({ cloudflareRayId: `${hex}-${pops[Math.floor(Math.random() * pops.length)]}` });
+                        }}
+                        className="text-[10px] text-indigo-400 hover:text-indigo-300"
+                      >
+                        Gen
+                      </button>
+                    </label>
+                    <input
+                      id="telemetry-cf-ray"
+                      type="text"
+                      value={input.cloudflareRayId || ''}
+                      onChange={(e) => onChange({ cloudflareRayId: e.target.value })}
+                      placeholder="8a2f10bc94e0192a-SJC"
+                      className="w-full font-mono text-[11px] bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  {/* Clock Format / Skew */}
+                  <div className="space-y-1">
+                    <label htmlFor="telemetry-clock-format" className="text-[11px] font-medium text-slate-300">
+                      Clock / Offset Specification
+                    </label>
+                    <select
+                      id="telemetry-clock-format"
+                      value={input.clockFormat || 'ISO_UTC_Z'}
+                      onChange={(e) => onChange({ clockFormat: e.target.value })}
+                      className="w-full font-mono text-[11px] bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="ISO_UTC_Z">ISO 8601 UTC (Trailing &apos;Z&apos;)</option>
+                      <option value="ISO_COLON_OFFSET">ISO 8601 Strict Offset (+00:00)</option>
+                      <option value="ISO_NO_COLON">Non-standard Offset (+0000 - Invalid)</option>
+                      <option value="EPOCH_MILLIS">UNIX Epoch Milliseconds (13 digits)</option>
+                      <option value="EPOCH_SECONDS">UNIX Epoch Seconds (10 digits)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

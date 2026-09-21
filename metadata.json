@@ -1,6 +1,6 @@
 {
-  "name": "TriageFlow — A SaaS Playbook",
-  "description": "Universal SaaS Support Engineering & API Triage Assistant engineered by R. Hanks for API triage, ingestion pipelines, secure endpoints, and webhook delivery workflows.",
+  "name": "TriageFlow — DFIR",
+  "description": "Enterprise Digital Forensics, Incident Response (DFIR) & API Telemetry Triage Assistant engineered by R. C. Hanks for API triage, ingestion pipelines, secure endpoints, and root-cause elimination workflows.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

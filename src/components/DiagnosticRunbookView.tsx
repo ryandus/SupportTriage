@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { DiagnosticCommand, TelemetryQuery, PipelineLayer } from '../types';
 import { PIPELINE_LAYERS_INFO, TELEMETRY_GUIDE } from '../data/incidentPresets';
+import { VENDOR_ROUTES } from '../config/vendorRoutes';
 
 interface DiagnosticRunbookViewProps {
   commands: DiagnosticCommand[];
@@ -82,7 +83,7 @@ export const DiagnosticRunbookView: React.FC<DiagnosticRunbookViewProps> = ({
     if (layerInfo?.commonErrors) {
       md += `- **Common Error Codes**: ${layerInfo.commonErrors.join(', ')}\n`;
     }
-    md += `\n---\n*TriageFlow — A SaaS Playbook • Engineered by R. Hanks*\n`;
+    md += `\n---\n*TriageFlow – DFIR • Engineered by R. C. Hanks*\n`;
 
     const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -251,23 +252,62 @@ export const DiagnosticRunbookView: React.FC<DiagnosticRunbookViewProps> = ({
                     </span>
                     <span className="text-xs text-slate-300">{q.description}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(q.query, `telemetry-${idx}`)}
-                    className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors"
-                  >
-                    {copiedId === `telemetry-${idx}` ? (
-                      <>
-                        <Check className="w-3 h-3 text-emerald-400" />
-                        <span className="text-emerald-300">Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3 h-3" />
-                        <span>Copy Query</span>
-                      </>
+                  <div className="flex items-center gap-1.5">
+                    {/* Deep-link action using centralized VENDOR_ROUTES */}
+                    {q.platform === 'Datadog' && (
+                      <a
+                        href={VENDOR_ROUTES.datadog.logSearch(q.query)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-medium transition-colors"
+                        title="Launch search in Datadog APM / Logs"
+                      >
+                        <ExternalLink className="w-3 h-3 text-indigo-400" />
+                        <span>Datadog</span>
+                      </a>
                     )}
-                  </button>
+                    {q.platform.includes('CloudWatch') && (
+                      <a
+                        href={VENDOR_ROUTES.cloudwatch.insights('/aws/ecs/api-gateway', q.query)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 font-medium transition-colors"
+                        title="Launch Insights in CloudWatch"
+                      >
+                        <ExternalLink className="w-3 h-3 text-amber-400" />
+                        <span>CloudWatch</span>
+                      </a>
+                    )}
+                    {q.platform.includes('Elasticsearch') && (
+                      <a
+                        href={VENDOR_ROUTES.kibana.discover(q.query)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-medium transition-colors"
+                        title="Launch query in Kibana"
+                      >
+                        <ExternalLink className="w-3 h-3 text-emerald-400" />
+                        <span>Kibana</span>
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(q.query, `telemetry-${idx}`)}
+                      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors"
+                    >
+                      {copiedId === `telemetry-${idx}` ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span className="text-emerald-300">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Copy Query</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="relative">

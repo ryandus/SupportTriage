@@ -330,14 +330,14 @@ const handleRemoveFact = (id: string) => {
       <footer className="border-t border-slate-800/80 bg-slate-950/80 mt-12 py-6 px-4 sm:px-6 lg:px-8 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="font-semibold text-slate-300">TriageFlow — A SaaS Playbook</span>
+            <span className="font-semibold text-slate-300">TriageFlow — DFIR</span>
             <span className="hidden sm:inline text-slate-700">•</span>
             <span className="text-slate-400">Enterprise API Triage & Demarcation</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-slate-400">Universal Telemetry</span>
             <span className="font-mono text-amber-400 font-semibold bg-amber-500/10 px-3 py-1 rounded border border-amber-500/20 text-xs shadow-sm">
-              TriageFlow — A SaaS Playbook • Engineered by R. Hanks
+              TriageFlow – DFIR • Engineered by R. C. Hanks
             </span>
           </div>
         </div>

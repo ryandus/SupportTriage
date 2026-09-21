@@ -74,6 +74,10 @@ export interface IncidentInput {
   clientIdentity?: string;
   endpointUrl?: string;
   httpMethod?: string;
+  traceparent?: string;
+  cloudflareRayId?: string;
+  clockFormat?: 'ISO_8601' | 'EPOCH_MS' | 'RFC_2822' | 'UTC_STRING';
+  isTriageLocked?: boolean;
 }
 
 export interface DiagnosticCommand {
@@ -161,6 +165,9 @@ export interface ClientComplaintAnalysis {
     clientIdentity?: string;
     endpointUrl?: string;
     httpMethod?: string;
+    traceparent?: string;
+    cloudflareRayId?: string;
+    isTriageLocked?: boolean;
   };
   recommendedClientReply: string;
   recommendedInternalNextStep: string;

@@ -70,7 +70,7 @@ export const ClientComplaintAnalyzer: React.FC<ClientComplaintAnalyzerProps> = (
 
       const data: ClientComplaintAnalysis = await res.json();
       setAnalysisResult(data);
-      // Auto pre-fill incident form with extracted fields
+      // Auto lock-in extracted incident fields to eliminate redundant manual data entry
       if (data.extractedIncidentFields) {
         onApplyAnalysis({
           summary: data.extractedIncidentFields.summary,
@@ -82,6 +82,9 @@ export const ClientComplaintAnalyzer: React.FC<ClientComplaintAnalyzerProps> = (
           clientIdentity: data.extractedIncidentFields.clientIdentity,
           endpointUrl: data.extractedIncidentFields.endpointUrl,
           httpMethod: data.extractedIncidentFields.httpMethod,
+          traceparent: data.extractedIncidentFields.traceparent,
+          cloudflareRayId: data.extractedIncidentFields.cloudflareRayId,
+          isTriageLocked: true,
         }, true);
       }
     } catch (err) {
@@ -99,6 +102,9 @@ export const ClientComplaintAnalyzer: React.FC<ClientComplaintAnalyzerProps> = (
           clientIdentity: fallback.extractedIncidentFields.clientIdentity,
           endpointUrl: fallback.extractedIncidentFields.endpointUrl,
           httpMethod: fallback.extractedIncidentFields.httpMethod,
+          traceparent: fallback.extractedIncidentFields.traceparent,
+          cloudflareRayId: fallback.extractedIncidentFields.cloudflareRayId,
+          isTriageLocked: true,
         }, true);
       }
     } finally {

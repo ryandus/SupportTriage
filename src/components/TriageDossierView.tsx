@@ -122,7 +122,7 @@ export const TriageDossierView: React.FC<TriageDossierViewProps> = ({
             <span className="font-medium text-slate-400">Multi-Tier Isolation Active</span>
           </div>
           <span className="font-mono text-amber-300 font-semibold bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20 shadow-sm text-[11px]">
-            TriageFlow — A SaaS Playbook • Engineered by R. Hanks
+            TriageFlow – DFIR • Engineered by R. C. Hanks
           </span>
         </div>
       </div>
@@ -174,7 +174,7 @@ export const TriageDossierView: React.FC<TriageDossierViewProps> = ({
         phase1Section +
         `## DETAILED 5-PARAGRAPH TECHNICAL TRIAGE\n` +
         triage.paragraphs.map(p => `### ${p.heading}\n\n${p.content}\n`).join('\n') +
-        `\n### Escalation Path\n- **Tier**: ${triage.escalationPath.tier}\n- **Team**: ${triage.escalationPath.team}\n- **SLA**: ${triage.escalationPath.sla}\n- **Channel**: ${triage.escalationPath.contactChannel}\n\n---\n*TriageFlow — A SaaS Playbook • Engineered by R. Hanks*`;
+        `\n### Escalation Path\n- **Tier**: ${triage.escalationPath.tier}\n- **Team**: ${triage.escalationPath.team}\n- **SLA**: ${triage.escalationPath.sla}\n- **Channel**: ${triage.escalationPath.contactChannel}\n\n---\n*TriageFlow – DFIR • Engineered by R. C. Hanks*`;
     } else if (triage.partnerExplanation) {
       const pe = triage.partnerExplanation;
       return `# PARTNER INCIDENT ADVISORY: ${triage.incidentRef}\n\n` +
@@ -186,7 +186,7 @@ export const TriageDossierView: React.FC<TriageDossierViewProps> = ({
         `### Current Remediation Status\n${pe.internalActionStatus}\n\n` +
         `### Action Required / Next Steps\n` +
         pe.nextStepsForPartner.map(s => `- ${s}`).join('\n') +
-        `\n\n---\n*TriageFlow — A SaaS Playbook • Engineered by R. Hanks*`;
+        `\n\n---\n*TriageFlow – DFIR • Engineered by R. C. Hanks*`;
     }
     return '';
   };
@@ -198,11 +198,11 @@ export const TriageDossierView: React.FC<TriageDossierViewProps> = ({
         `*Diagnosis:* ${triage.paragraphs[0]?.content.slice(0, 240)}...\n\n` +
         `*Immediate Action:* ${triage.paragraphs[4]?.content.slice(0, 200)}...\n` +
         `*Escalation:* ${triage.escalationPath.team} (${triage.escalationPath.sla})\n\n` +
-        `_TriageFlow — A SaaS Playbook • Engineered by R. Hanks_`;
+        `_TriageFlow – DFIR • Engineered by R. C. Hanks_`;
     } else if (triage.partnerExplanation) {
       return `📢 *Partner Notice for ${triage.incidentRef}:*\n${triage.partnerExplanation.situationSummary}\n\n` +
         `*Next Steps:* ${triage.partnerExplanation.nextStepsForPartner[0] || 'Under review'}\n\n` +
-        `_TriageFlow — A SaaS Playbook • Engineered by R. Hanks_`;
+        `_TriageFlow – DFIR • Engineered by R. C. Hanks_`;
     }
     return '';
   };
@@ -309,7 +309,7 @@ export const TriageDossierView: React.FC<TriageDossierViewProps> = ({
             type="button"
             onClick={handleDownloadMarkdown}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-medium transition-colors"
-            title="Download full operational dossier markdown file (TriageFlow — A SaaS Playbook • Engineered by R. Hanks)"
+            title="Download full operational dossier markdown file (TriageFlow – DFIR • Engineered by R. C. Hanks)"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Export Dossier (.md)</span>
@@ -453,7 +453,7 @@ export const TriageDossierView: React.FC<TriageDossierViewProps> = ({
           </div>
           <span className="hidden sm:inline text-slate-700">|</span>
           <span className="font-mono text-amber-400 font-semibold bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20 shadow-sm">
-            TriageFlow — A SaaS Playbook • Engineered by R. Hanks
+            TriageFlow – DFIR • Engineered by R. C. Hanks
           </span>
         </div>
       </div>

@@ -32,7 +32,7 @@ We haven't changed our payload format since last sprint. Did you guys push a gat
     id: 'downstream-handshake-hang',
     title: 'Urgent Ticket: "Submissions to downstream partner clearinghouse are hanging and timing out with 504"',
     source: 'Email escalation to support@platform.io • Globex Technical Operations Lead',
-    text: `Hello SaaS Support,
+    text: `Hello Incident Response Team,
 We submitted critical transaction EXT-API-992104 about 45 minutes ago.
 The transaction status is still stuck on "Processing Steps 4–6: Downstream Partner Handshake". When we query your status API, we get:
 "504 Gateway Timeout: SSL ETIMEDOUT during downstream clearinghouse MTLS handshake".
@@ -270,12 +270,18 @@ export function analyzeClientComplaintDeterministic(complaintText: string): Clie
     });
   }
 
+  // W3C Traceparent & Cloudflare Ray ID extraction
+  const traceparentMatch = complaintText.match(/\b(00-[a-f0-9]{32}-[a-f0-9]{16}-01)\b/i);
+  const traceparent = traceparentMatch ? traceparentMatch[1] : undefined;
+  const cfRayMatch = complaintText.match(/\b([a-f0-9]{16}-[A-Z]{3})\b/i) || complaintText.match(/cf-ray[:=\s]+([a-f0-9]{16}(?:-[A-Za-z0-9]+)?)/i);
+  const cloudflareRayId = cfRayMatch ? cfRayMatch[1] : undefined;
+
   // Recommended Client-Facing Reply
   const recommendedClientReply = `Hello ${clientIdentity},
 
-Thank you for reaching out and providing the details for transaction ${reportId}.
+Thank you for reaching out and providing the details for incident/transaction ${reportId}.
 
-Our SaaS Technical Operations & Support Engineering team has conducted an initial automated pipeline triage:
+Our DFIR & Enterprise Triage Engineering team has conducted an initial automated pipeline triage:
 • Identified Demarcation Domain: ${pipelineLayer.split(':')[0]}
 • Observed Symptom: ${detectedSymptoms[0] || summary}
 • Most Probable Root Cause: ${likelyIssues[0]?.title || 'Processing pipeline error'}
@@ -288,9 +294,9 @@ Immediate Verification Steps for Your Team:
 Our internal team is actively investigating this on our end and will follow up with an update within 30 minutes.
 
 Best regards,
-TriageFlow — A SaaS Playbook Team
+TriageFlow — DFIR Team
 
-TriageFlow — A SaaS Playbook • Engineered by R. Hanks`;
+TriageFlow – DFIR • Engineered by R. C. Hanks`;
 
   // Recommended Internal Next Step
   const recommendedInternalNextStep = `1. Cross-reference transaction ${reportId} in Datadog APM and PostgreSQL tasks table.
@@ -298,7 +304,7 @@ TriageFlow — A SaaS Playbook • Engineered by R. Hanks`;
 3. Rule-out action: ${likelyIssues[0]?.suggestedAction || 'Verify service logs.'}
 
 ---
-TriageFlow — A SaaS Playbook • Engineered by R. Hanks`;
+TriageFlow – DFIR • Engineered by R. C. Hanks`;
 
   return {
     clientIdentity,
@@ -314,7 +320,10 @@ TriageFlow — A SaaS Playbook • Engineered by R. Hanks`;
       assetReference,
       clientIdentity,
       endpointUrl: lower.includes('post') ? 'POST /v1/reports' : '/v1/reports',
-      httpMethod: lower.includes('get') ? 'GET' : 'POST'
+      httpMethod: lower.includes('get') ? 'GET' : 'POST',
+      traceparent,
+      cloudflareRayId,
+      isTriageLocked: true
     },
     recommendedClientReply,
     recommendedInternalNextStep
