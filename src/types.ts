@@ -20,6 +20,27 @@ export interface InvestigatedFact {
   details?: string;
 }
 
+// ---------------------------------------------------------------------------
+// IOC telemetry layer
+// ---------------------------------------------------------------------------
+
+export type IocType = 'ip' | 'domain' | 'url' | 'hash' | 'command' | 'file_path' | 'registry' | 'account';
+
+export type IocRole = 'attacker_source' | 'c2' | 'payload' | 'victim_asset' | 'benign';
+
+export type IocFlag = 'empty_file_hash' | 'reserved_range' | 'truncated' | 'non_routable';
+
+export interface IocRecord {
+  type: IocType;
+  indicator: string;
+  context: string;
+  role?: IocRole;
+  firstSeen?: string; // ISO-8601 UTC timestamp
+  sourceLine?: number; // Provenance back to raw log line
+  hashAlgo?: 'md5' | 'sha1' | 'sha256';
+  flags?: IocFlag[];
+}
+
 export interface EvidentiaryFields {
   clientIdentity?: string; // Org ID / Client Identity / User Email
   reportId: string; // Request ID / Transaction ID / Report ID
@@ -78,7 +99,12 @@ export interface IncidentInput {
   cloudflareRayId?: string;
   clockFormat?: 'ISO_8601' | 'EPOCH_MS' | 'RFC_2822' | 'UTC_STRING';
   isTriageLocked?: boolean;
+  iocs?: IocRecord[];
 }
+
+// Enforcement type to ensure zero-retention boundary on external handovers:
+// strips client PII, internal notes, raw indicators, and internal rule-out state.
+export type HandoverSafeIncident = Omit<IncidentInput, 'clientIdentity' | 'customNotes' | 'iocs' | 'investigatedFacts'>;
 
 export interface DiagnosticCommand {
   title: string;
@@ -168,6 +194,7 @@ export interface ClientComplaintAnalysis {
     traceparent?: string;
     cloudflareRayId?: string;
     isTriageLocked?: boolean;
+    iocs?: IocRecord[];
   };
   recommendedClientReply: string;
   recommendedInternalNextStep: string;
