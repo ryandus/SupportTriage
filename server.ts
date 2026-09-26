@@ -5,6 +5,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 import { buildDeterministicTriage } from './src/lib/triageEngine';
 import { IncidentInput, TriageOutput, toHandoverSafeIncident } from './src/types';
+import { IOC_TYPES, IocRejection, sanitizeIocBatch } from './src/lib/iocSanity';
 
 dotenv.config();
 
@@ -27,6 +28,47 @@ function getAI(): GoogleGenAI | null {
     });
   }
   return aiClient;
+}
+
+// ---------------------------------------------------------------------------
+// IOC extraction: shared Gemini schema + sanitization
+// ---------------------------------------------------------------------------
+
+// Model-supplied fields only. `flags` are assigned by the sanity engine and
+// `role` is an analyst decision, so neither is requested from the model.
+const IOC_RESPONSE_SCHEMA = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      type: { type: Type.STRING, enum: IOC_TYPES },
+      indicator: { type: Type.STRING, description: 'Literal indicator value exactly as it appears in the source text' },
+      context: { type: Type.STRING, description: 'Short excerpt of the surrounding source text' },
+      firstSeen: { type: Type.STRING, description: 'ISO-8601 UTC timestamp if present in the source; omit otherwise' },
+      sourceLine: { type: Type.INTEGER, description: '1-based line number in the source text, if determinable' },
+      hashAlgo: { type: Type.STRING, enum: ['md5', 'sha1', 'sha256'] },
+    },
+    required: ['type', 'indicator', 'context'],
+  },
+};
+
+const IOC_PROMPT_RULES = `Also extract every indicator of compromise into "iocs" (types: ${IOC_TYPES.join(', ')}).
+Only report values literally present in the text; never invent or complete truncated values.`;
+
+const MAX_LOGGED_RECORD_CHARS = 300;
+
+/** Runs every model-extracted IOC through sanitizeIocRecord; invalid records are logged and skipped. */
+function sanitizeModelIocs(raw: unknown, endpoint: string) {
+  return sanitizeIocBatch(raw, ({ index, reason, record }: IocRejection) => {
+    let preview: string;
+    try {
+      preview = JSON.stringify(record) ?? String(record);
+    } catch {
+      preview = String(record);
+    }
+    if (preview.length > MAX_LOGGED_RECORD_CHARS) preview = `${preview.slice(0, MAX_LOGGED_RECORD_CHARS)}…`;
+    console.warn(`[${endpoint}] dropped invalid IOC record #${index}: ${reason} :: ${preview}`);
+  });
 }
 
 // Health check endpoint
@@ -202,7 +244,9 @@ Pipeline Layer MUST be one of:
 
 Diagnostic Mode MUST be:
 - "Mode A: Internal 5-Paragraph Technical Triage" OR
-- "Mode B: Partner-Facing Plain Explanation"`;
+- "Mode B: Partner-Facing Plain Explanation"
+
+${IOC_PROMPT_RULES}`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
@@ -229,6 +273,7 @@ Diagnostic Mode MUST be:
                   },
                 },
               },
+              iocs: IOC_RESPONSE_SCHEMA,
             },
             required: ['summary', 'errorCode', 'pipelineLayer'],
           },
@@ -236,6 +281,7 @@ Diagnostic Mode MUST be:
       });
 
       const data = JSON.parse(response.text?.trim() || '{}');
+      data.iocs = sanitizeModelIocs(data.iocs, 'parse-log');
       res.json(data);
       return;
     } catch (err) {
@@ -400,7 +446,8 @@ Perform a deep technical triage to:
    - "Layer 6: Webhook / Callback Notification"
 4. Extract the 5+ operational fields (summary, errorCode, pipelineLayer, reportId, timestamp, assetReference, clientIdentity, endpointUrl, httpMethod).
 5. Draft an empathetic, highly professional, non-jargon client reply with immediate verification steps they can test.
-6. Provide clear internal next steps for Tier 3 engineers.`;
+6. Provide clear internal next steps for Tier 3 engineers.
+7. ${IOC_PROMPT_RULES.replace('"iocs"', '"extractedIncidentFields.iocs"')}`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
@@ -448,6 +495,7 @@ Perform a deep technical triage to:
                   clientIdentity: { type: Type.STRING },
                   endpointUrl: { type: Type.STRING },
                   httpMethod: { type: Type.STRING },
+                  iocs: IOC_RESPONSE_SCHEMA,
                 },
                 required: ['summary', 'errorCode', 'pipelineLayer', 'reportId', 'timestamp', 'assetReference'],
               },
@@ -460,6 +508,12 @@ Perform a deep technical triage to:
       });
 
       const parsedAnalysis = JSON.parse(response.text?.trim() || '{}');
+      if (parsedAnalysis.extractedIncidentFields && typeof parsedAnalysis.extractedIncidentFields === 'object') {
+        parsedAnalysis.extractedIncidentFields.iocs = sanitizeModelIocs(
+          parsedAnalysis.extractedIncidentFields.iocs,
+          'analyze-complaint'
+        );
+      }
       res.json(parsedAnalysis);
       return;
     } catch (err) {

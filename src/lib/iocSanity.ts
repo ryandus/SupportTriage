@@ -1,4 +1,4 @@
-import { IocFlag, IocRecord } from '../types';
+import { IocFlag, IocRecord, IocType } from '../types';
 
 // ---------------------------------------------------------------------------
 // IOC sanity engine
@@ -22,6 +22,25 @@ const HEX_LENGTH_TO_ALGO: Readonly<Record<number, NonNullable<IocRecord['hashAlg
   40: 'sha1',
   64: 'sha256',
 };
+
+// Runtime mirror of the IocType union. Typed as Record<IocType, true> so adding
+// or removing a type in types.ts is a compile error here until this is updated.
+const IOC_TYPE_SET: Readonly<Record<IocType, true>> = {
+  ip: true,
+  domain: true,
+  url: true,
+  hash: true,
+  command: true,
+  file_path: true,
+  registry: true,
+  account: true,
+};
+
+export const IOC_TYPES = Object.keys(IOC_TYPE_SET) as IocType[];
+
+function isIocType(value: unknown): value is IocType {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(IOC_TYPE_SET, value);
+}
 
 type Ipv4Range = { base: number; prefix: number; flag: IocFlag; label: string };
 
@@ -129,6 +148,8 @@ function normalizeIndicator(type: IocRecord['type'], raw: string): string {
  */
 export function sanitizeIocRecord(ioc: Partial<IocRecord>): IocRecord {
   if (!ioc.type) throw new Error('sanitizeIocRecord: missing required field "type"');
+  // Input usually arrives as untyped JSON (e.g. model output), so enforce the union at runtime.
+  if (!isIocType(ioc.type)) throw new Error(`sanitizeIocRecord: unknown IOC type "${String(ioc.type)}"`);
   if (typeof ioc.indicator !== 'string' || ioc.indicator.trim() === '') {
     throw new Error('sanitizeIocRecord: missing required field "indicator"');
   }
@@ -158,5 +179,39 @@ export function sanitizeIocRecord(ioc: Partial<IocRecord>): IocRecord {
   if (ioc.sourceLine !== undefined) out.sourceLine = ioc.sourceLine;
   if (hashAlgo !== undefined) out.hashAlgo = hashAlgo;
   if (flags.size > 0) out.flags = [...flags];
+  return out;
+}
+
+export interface IocRejection {
+  index: number;
+  reason: string;
+  record: unknown;
+}
+
+/**
+ * Sanitize an untrusted list of IOCs (e.g. a model's JSON output) record by record.
+ * A record that throws is reported through `onReject` and skipped; it never fails
+ * the batch. A non-array input yields an empty list (reported once as index -1).
+ */
+export function sanitizeIocBatch(
+  raw: unknown,
+  onReject: (rejection: IocRejection) => void = () => {}
+): IocRecord[] {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) {
+    onReject({ index: -1, reason: 'iocs payload is not an array', record: raw });
+    return [];
+  }
+  const out: IocRecord[] = [];
+  raw.forEach((item, index) => {
+    try {
+      if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+        throw new Error('record is not an object');
+      }
+      out.push(sanitizeIocRecord(item as Partial<IocRecord>));
+    } catch (err) {
+      onReject({ index, reason: err instanceof Error ? err.message : String(err), record: item });
+    }
+  });
   return out;
 }
