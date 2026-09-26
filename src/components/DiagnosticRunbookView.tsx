@@ -68,8 +68,12 @@ export const DiagnosticRunbookView: React.FC<DiagnosticRunbookViewProps> = ({
 
     md += `## 2. Telemetry Log & Database Queries\n\n`;
     queries.forEach((q, i) => {
-      md += `### 2.${i + 1} ${q.name} (${q.system})\n`;
-      md += `${q.description}\n\n`;
+      const title = (q as any).name || (q as any).title || q.description || 'Telemetry Query';
+      const target = (q as any).system || q.platform || 'Log Search';
+      md += `### 2.${i + 1} ${target} — ${title}\n`;
+      if (q.description && title !== q.description) {
+        md += `${q.description}\n\n`;
+      }
       md += `\`\`\`sql\n${q.query}\n\`\`\`\n\n`;
     });
 
@@ -83,7 +87,7 @@ export const DiagnosticRunbookView: React.FC<DiagnosticRunbookViewProps> = ({
     if (layerInfo?.commonErrors) {
       md += `- **Common Error Codes**: ${layerInfo.commonErrors.join(', ')}\n`;
     }
-    md += `\n---\n*TriageFlow – DFIR • Engineered by R. C. Hanks*\n`;
+    md += '\n---\n*TriageFlow – DFIR • Engineered by R. C. Hanks*\n';
 
     const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
