@@ -177,8 +177,9 @@ export const TriageDossierView: React.FC<TriageDossierViewProps> = ({
         `\n### Escalation Path\n- **Tier**: ${triage.escalationPath.tier}\n- **Team**: ${triage.escalationPath.team}\n- **SLA**: ${triage.escalationPath.sla}\n- **Channel**: ${triage.escalationPath.contactChannel}\n\n---\n*TriageFlow – DFIR • Engineered by R. C. Hanks*`;
     } else if (triage.partnerExplanation) {
       const pe = triage.partnerExplanation;
+      // Phase 1 is intentionally excluded from the partner advisory: its evidence script embeds
+      // the client identity and its failure-domain rationale is internal (zero-retention boundary).
       return `# PARTNER INCIDENT ADVISORY: ${triage.incidentRef}\n\n` +
-        phase1Section +
         `### Situation Summary\n${pe.situationSummary}\n\n` +
         `### What Happened\n${pe.whatHappened}\n\n` +
         `### Verification & Rule-Out Steps for Your Team\n` +
