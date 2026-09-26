@@ -106,6 +106,43 @@ export interface IncidentInput {
 // strips client PII, internal notes, raw indicators, and internal rule-out state.
 export type HandoverSafeIncident = Omit<IncidentInput, 'clientIdentity' | 'customNotes' | 'iocs' | 'investigatedFacts'>;
 
+// Runtime allow-list for the handover boundary. Typed as a Record over every
+// HandoverSafeIncident key so the compiler forces an explicit decision:
+//  - a new IncidentInput field not listed here  -> compile error (missing key)
+//  - a stripped field (e.g. clientIdentity) added -> compile error (excess property)
+const HANDOVER_SAFE_KEYS: Readonly<Record<keyof HandoverSafeIncident, true>> = {
+  summary: true,
+  errorCode: true,
+  pipelineLayer: true,
+  reportId: true,
+  timestamp: true,
+  assetReference: true,
+  diagnosticMode: true,
+  endpointUrl: true,
+  httpMethod: true,
+  traceparent: true,
+  cloudflareRayId: true,
+  clockFormat: true,
+  isTriageLocked: true,
+};
+
+/**
+ * Runtime enforcement of the zero-retention handover boundary.
+ *
+ * Copies ONLY allow-listed keys. Rest-destructuring (`const { pii, ...rest } = input`)
+ * is a deny-list: any undeclared property carried by the object at runtime
+ * (structural typing permits extras) would pass straight through. This does not.
+ */
+export function toHandoverSafeIncident(input: IncidentInput): HandoverSafeIncident {
+  const safe: Record<string, unknown> = {};
+  for (const key of Object.keys(HANDOVER_SAFE_KEYS) as (keyof HandoverSafeIncident)[]) {
+    if (Object.prototype.hasOwnProperty.call(input, key) && input[key] !== undefined) {
+      safe[key] = input[key];
+    }
+  }
+  return safe as HandoverSafeIncident;
+}
+
 export interface DiagnosticCommand {
   title: string;
   command: string;
