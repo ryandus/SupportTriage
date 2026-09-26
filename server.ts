@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 import { buildDeterministicTriage } from './src/lib/triageEngine';
-import { IncidentInput, TriageOutput } from './src/types';
+import { IncidentInput, TriageOutput, toHandoverSafeIncident } from './src/types';
 
 dotenv.config();
 
@@ -84,19 +84,27 @@ Return clear, professional, transparent sections:
 4. internalActionStatus
 5. nextStepsForPartner (array of actionable bullet points)`;
 
-    const userPrompt = `INCIDENT DETAILS:
-1. Incident / Error Summary: ${incidentInput.summary}
-2. Error Code / HTTP Status: ${incidentInput.errorCode}
-3. Pipeline Layer: ${incidentInput.pipelineLayer}
-4. Telemetry:
-   - Report / Transaction ID: ${incidentInput.reportId}
-   - Timestamp (UTC): ${incidentInput.timestamp}
-   - Hash / Asset Reference: ${incidentInput.assetReference}
-5. Diagnostic Mode: ${incidentInput.diagnosticMode}
-
-INVESTIGATED FACTS / RULE-OUTS RECORDED SO FAR:
+    // Mode B output is handed to external partners, so its prompt is built ONLY from the
+    // runtime allow-listed HandoverSafeIncident: no client identity, engineer notes, raw IOCs,
+    // or internal rule-out state reach the model, and therefore cannot be echoed into partner text.
+    const promptSource = isModeA ? incidentInput : toHandoverSafeIncident(incidentInput);
+    const internalContext = isModeA
+      ? `INVESTIGATED FACTS / RULE-OUTS RECORDED SO FAR:
 ${investigatedContext}
-${incidentInput.customNotes ? `Additional notes from engineer: ${incidentInput.customNotes}` : ''}`;
+${incidentInput.customNotes ? `Additional notes from engineer: ${incidentInput.customNotes}` : ''}`
+      : `INVESTIGATED FACTS / RULE-OUTS: Withheld (zero-retention partner handover boundary). Do not speculate about internal investigation state.`;
+
+    const userPrompt = `INCIDENT DETAILS:
+1. Incident / Error Summary: ${promptSource.summary}
+2. Error Code / HTTP Status: ${promptSource.errorCode}
+3. Pipeline Layer: ${promptSource.pipelineLayer}
+4. Telemetry:
+   - Report / Transaction ID: ${promptSource.reportId}
+   - Timestamp (UTC): ${promptSource.timestamp}
+   - Hash / Asset Reference: ${promptSource.assetReference}
+5. Diagnostic Mode: ${promptSource.diagnosticMode}
+
+${internalContext}`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.8-flash',

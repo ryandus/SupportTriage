@@ -20,6 +20,27 @@ export interface InvestigatedFact {
   details?: string;
 }
 
+// ---------------------------------------------------------------------------
+// IOC telemetry layer
+// ---------------------------------------------------------------------------
+
+export type IocType = 'ip' | 'domain' | 'url' | 'hash' | 'command' | 'file_path' | 'registry' | 'account';
+
+export type IocRole = 'attacker_source' | 'c2' | 'payload' | 'victim_asset' | 'benign';
+
+export type IocFlag = 'empty_file_hash' | 'reserved_range' | 'truncated' | 'non_routable';
+
+export interface IocRecord {
+  type: IocType;
+  indicator: string;
+  context: string;
+  role?: IocRole;
+  firstSeen?: string; // ISO-8601 UTC timestamp
+  sourceLine?: number; // Provenance back to raw log line
+  hashAlgo?: 'md5' | 'sha1' | 'sha256';
+  flags?: IocFlag[];
+}
+
 export interface EvidentiaryFields {
   clientIdentity?: string; // Org ID / Client Identity / User Email
   reportId: string; // Request ID / Transaction ID / Report ID
@@ -78,6 +99,48 @@ export interface IncidentInput {
   cloudflareRayId?: string;
   clockFormat?: 'ISO_8601' | 'EPOCH_MS' | 'RFC_2822' | 'UTC_STRING';
   isTriageLocked?: boolean;
+  iocs?: IocRecord[];
+}
+
+// Enforcement type to ensure zero-retention boundary on external handovers:
+// strips client PII, internal notes, raw indicators, and internal rule-out state.
+export type HandoverSafeIncident = Omit<IncidentInput, 'clientIdentity' | 'customNotes' | 'iocs' | 'investigatedFacts'>;
+
+// Runtime allow-list for the handover boundary. Typed as a Record over every
+// HandoverSafeIncident key so the compiler forces an explicit decision:
+//  - a new IncidentInput field not listed here  -> compile error (missing key)
+//  - a stripped field (e.g. clientIdentity) added -> compile error (excess property)
+const HANDOVER_SAFE_KEYS: Readonly<Record<keyof HandoverSafeIncident, true>> = {
+  summary: true,
+  errorCode: true,
+  pipelineLayer: true,
+  reportId: true,
+  timestamp: true,
+  assetReference: true,
+  diagnosticMode: true,
+  endpointUrl: true,
+  httpMethod: true,
+  traceparent: true,
+  cloudflareRayId: true,
+  clockFormat: true,
+  isTriageLocked: true,
+};
+
+/**
+ * Runtime enforcement of the zero-retention handover boundary.
+ *
+ * Copies ONLY allow-listed keys. Rest-destructuring (`const { pii, ...rest } = input`)
+ * is a deny-list: any undeclared property carried by the object at runtime
+ * (structural typing permits extras) would pass straight through. This does not.
+ */
+export function toHandoverSafeIncident(input: IncidentInput): HandoverSafeIncident {
+  const safe: Record<string, unknown> = {};
+  for (const key of Object.keys(HANDOVER_SAFE_KEYS) as (keyof HandoverSafeIncident)[]) {
+    if (Object.prototype.hasOwnProperty.call(input, key) && input[key] !== undefined) {
+      safe[key] = input[key];
+    }
+  }
+  return safe as HandoverSafeIncident;
 }
 
 export interface DiagnosticCommand {
@@ -168,6 +231,7 @@ export interface ClientComplaintAnalysis {
     traceparent?: string;
     cloudflareRayId?: string;
     isTriageLocked?: boolean;
+    iocs?: IocRecord[];
   };
   recommendedClientReply: string;
   recommendedInternalNextStep: string;

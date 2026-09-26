@@ -1,9 +1,12 @@
 import {
   IncidentInput,
+  HandoverSafeIncident,
+  PartnerFacingResponse,
   TriageOutput,
   DiagnosticCommand,
   TelemetryQuery,
-  SuggestedRuleOut
+  SuggestedRuleOut,
+  toHandoverSafeIncident
 } from '../types';
 import { buildPhase1Protocol } from './phase1Protocol';
 
@@ -182,6 +185,41 @@ export function generateDefaultRuleOuts(
   ];
 }
 
+/**
+ * Mode B partner-facing text. Accepts ONLY a HandoverSafeIncident, so client PII,
+ * internal notes, raw IOCs, and internal rule-out state are unreachable here by type,
+ * and callers are expected to pass the output of toHandoverSafeIncident() (runtime allow-list).
+ */
+export function buildPartnerExplanation(safe: HandoverSafeIncident): PartnerFacingResponse {
+  const { summary, errorCode, pipelineLayer, reportId, timestamp } = safe;
+
+  return {
+    situationSummary: `We are actively investigating an issue affecting transaction ${reportId} submitted on ${timestamp}. Our systems encountered an unexpected status (${errorCode}: ${summary}) while processing this report through the ${pipelineLayer.split(':')[0]} stage.`,
+    whatHappened: `When your request was received, our platform initiated the standard delivery process. However, during the ${pipelineLayer.includes('Storage') ? 'asset retrieval and verification step' : 'gateway validation and processing stage'}, the connection did not complete as expected. ${
+      pipelineLayer.includes('Storage Ingestion') || pipelineLayer.includes('Layer 3')
+        ? 'Specifically, our system was unable to download the media asset associated with the request from the provided storage URL, resulting in an access or expiration failure.'
+        : pipelineLayer.includes('External Handshake') || pipelineLayer.includes('Layer 5')
+        ? 'Our automated delivery system encountered an outbound timeout while transmitting the payload to the downstream partner endpoint.'
+        : 'Our gateway validation service identified an issue with the format or parameters of the incoming request.'
+    }`,
+    partnerRuleOutSteps: [
+      'Confirm that your client-side upload systems and network egress logs show no transmission bottlenecks or local errors.',
+      pipelineLayer.includes('Storage Ingestion') || pipelineLayer.includes('Layer 3')
+        ? 'Verify that the presigned storage URL has an expiration TTL of at least 60 minutes and that source bucket access permissions are active.'
+        : pipelineLayer.includes('External Handshake') || pipelineLayer.includes('Layer 5')
+        ? 'No partner-side action required for external endpoint delivery; our internal team is actively monitoring connection retries.'
+        : 'Check that all required fields (such as timestamp format and SHA-256 asset hash) match our API specification exactly.',
+      'Ensure that outgoing requests from your environment use the updated production API bearer token.'
+    ],
+    internalActionStatus: `Our SaaS Support Engineering and Ingestion On-Call teams have isolated the incident to transaction ${reportId}. We are re-verifying connection certificates, inspecting intermediate storage buffers, and preparing to re-process the report without requiring you to regenerate the original data if possible.`,
+    nextStepsForPartner: [
+      `Keep note of Transaction Reference ID: ${reportId}.`,
+      'If you have updated or refreshed asset URLs, please reply directly with the updated reference.',
+      'Our team will provide an updated status within the next 30 minutes or as soon as delivery confirmation is received.'
+    ]
+  };
+}
+
 export function buildDeterministicTriage(input: IncidentInput): TriageOutput {
   const {
     summary,
@@ -327,32 +365,8 @@ export function buildDeterministicTriage(input: IncidentInput): TriageOutput {
     pipelineLayer.includes('External Handshake') || pipelineLayer.includes('Layer 5') ? 'L3 Core Integrations / Partner Liaison On-Call' : 'L2 Ingestion Engineering On-Call'
   } via the dedicated PagerDuty bridge (SLA: 15 minutes). Once delivery is re-established, attach this triage dossier to Jira ticket INC-TRIAGE-${reportId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10)} for post-incident root-cause review and automated canary rule tuning.`;
 
-  // Build Mode B: Partner-Facing Plain Explanation
-  const partnerExplanation = {
-    situationSummary: `We are actively investigating an issue affecting transaction ${reportId} submitted on ${timestamp}. Our systems encountered an unexpected status (${errorCode}: ${summary}) while processing this report through the ${pipelineLayer.split(':')[0]} stage.`,
-    whatHappened: `When your request was received, our platform initiated the standard delivery process. However, during the ${pipelineLayer.includes('Storage') ? 'asset retrieval and verification step' : 'gateway validation and processing stage'}, the connection did not complete as expected. ${
-      pipelineLayer.includes('Storage Ingestion') || pipelineLayer.includes('Layer 3')
-        ? 'Specifically, our system was unable to download the media asset associated with the request from the provided storage URL, resulting in an access or expiration failure.'
-        : pipelineLayer.includes('External Handshake') || pipelineLayer.includes('Layer 5')
-        ? 'Our automated delivery system encountered an outbound timeout while transmitting the payload to the downstream partner endpoint.'
-        : 'Our gateway validation service identified an issue with the format or parameters of the incoming request.'
-    }`,
-    partnerRuleOutSteps: [
-      'Confirm that your client-side upload systems and network egress logs show no transmission bottlenecks or local errors.',
-      pipelineLayer.includes('Storage Ingestion') || pipelineLayer.includes('Layer 3')
-        ? 'Verify that the presigned storage URL has an expiration TTL of at least 60 minutes and that source bucket access permissions are active.'
-        : pipelineLayer.includes('External Handshake') || pipelineLayer.includes('Layer 5')
-        ? 'No partner-side action required for external endpoint delivery; our internal team is actively monitoring connection retries.'
-        : 'Check that all required fields (such as timestamp format and SHA-256 asset hash) match our API specification exactly.',
-      'Ensure that outgoing requests from your environment use the updated production API bearer token.'
-    ],
-    internalActionStatus: `Our SaaS Support Engineering and Ingestion On-Call teams have isolated the incident to transaction ${reportId}. We are re-verifying connection certificates, inspecting intermediate storage buffers, and preparing to re-process the report without requiring you to regenerate the original data if possible.`,
-    nextStepsForPartner: [
-      `Keep note of Transaction Reference ID: ${reportId}.`,
-      'If you have updated or refreshed asset URLs, please reply directly with the updated reference.',
-      'Our team will provide an updated status within the next 30 minutes or as soon as delivery confirmation is received.'
-    ]
-  };
+  // Build Mode B: Partner-Facing Plain Explanation (zero-retention boundary)
+  const partnerExplanation = buildPartnerExplanation(toHandoverSafeIncident(input));
 
   return {
     mode: diagnosticMode,
