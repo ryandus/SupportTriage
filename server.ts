@@ -55,19 +55,14 @@ const IOC_RESPONSE_SCHEMA = {
 const IOC_PROMPT_RULES = `Also extract every indicator of compromise into "iocs" (types: ${IOC_TYPES.join(', ')}).
 Only report values literally present in the text; never invent or complete truncated values.`;
 
-const MAX_LOGGED_RECORD_CHARS = 300;
-
-/** Runs every model-extracted IOC through sanitizeIocRecord; invalid records are logged and skipped. */
+/**
+ * Runs every model-extracted IOC through sanitizeIocRecord; invalid records are skipped.
+ * Zero-retention: only index, validated type, and reason are logged, never indicator
+ * values or source context.
+ */
 function sanitizeModelIocs(raw: unknown, endpoint: string) {
-  return sanitizeIocBatch(raw, ({ index, reason, record }: IocRejection) => {
-    let preview: string;
-    try {
-      preview = JSON.stringify(record) ?? String(record);
-    } catch {
-      preview = String(record);
-    }
-    if (preview.length > MAX_LOGGED_RECORD_CHARS) preview = `${preview.slice(0, MAX_LOGGED_RECORD_CHARS)}…`;
-    console.warn(`[${endpoint}] dropped invalid IOC record #${index}: ${reason} :: ${preview}`);
+  return sanitizeIocBatch(raw, ({ index, type, reason }: IocRejection) => {
+    console.warn(`[${endpoint}] dropped invalid IOC record index=${index} type=${type ?? 'invalid'} reason=${reason}`);
   });
 }
 

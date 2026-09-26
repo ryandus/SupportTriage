@@ -84,6 +84,7 @@ export const ClientComplaintAnalyzer: React.FC<ClientComplaintAnalyzerProps> = (
           httpMethod: data.extractedIncidentFields.httpMethod,
           traceparent: data.extractedIncidentFields.traceparent,
           cloudflareRayId: data.extractedIncidentFields.cloudflareRayId,
+          ...(data.extractedIncidentFields.iocs?.length ? { iocs: data.extractedIncidentFields.iocs } : {}),
           isTriageLocked: true,
         }, true);
       }
@@ -104,6 +105,7 @@ export const ClientComplaintAnalyzer: React.FC<ClientComplaintAnalyzerProps> = (
           httpMethod: fallback.extractedIncidentFields.httpMethod,
           traceparent: fallback.extractedIncidentFields.traceparent,
           cloudflareRayId: fallback.extractedIncidentFields.cloudflareRayId,
+          ...(fallback.extractedIncidentFields.iocs?.length ? { iocs: fallback.extractedIncidentFields.iocs } : {}),
           isTriageLocked: true,
         }, true);
       }

@@ -85,6 +85,7 @@ export const ClientComplaintModal: React.FC<ClientComplaintModalProps> = ({
       clientIdentity: extractedIncidentFields.clientIdentity,
       endpointUrl: extractedIncidentFields.endpointUrl,
       httpMethod: extractedIncidentFields.httpMethod,
+      ...(extractedIncidentFields.iocs?.length ? { iocs: extractedIncidentFields.iocs } : {}),
     }, autoGenerateTriage);
     onClose();
   };

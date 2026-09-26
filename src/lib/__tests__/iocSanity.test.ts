@@ -188,6 +188,28 @@ test('batch keeps valid records and reports each invalid one without failing', (
     rejected.map((r) => r.index),
     [1, 2, 3]
   );
+  // Zero-retention: only index / validated type / reason; invalid types are nulled.
+  assert.deepEqual(
+    rejected.map((r) => r.type),
+    ['ip', null, null]
+  );
+});
+
+test('rejections never carry indicator values or raw records', () => {
+  const secret = 'SECRET-203.0.113.99-CLIENT-EXCERPT';
+  const rejected: IocRejection[] = [];
+  sanitizeIocBatch(
+    [
+      { type: secret, indicator: secret, context: secret },
+      { type: 'ip', indicator: '', context: secret },
+    ],
+    (r) => rejected.push(r)
+  );
+  assert.equal(rejected.length, 2);
+  for (const r of rejected) {
+    assert.deepEqual(Object.keys(r).sort(), ['index', 'reason', 'type']);
+    assert.ok(!JSON.stringify(r).includes('SECRET'));
+  }
 });
 
 test('batch treats missing iocs as empty and non-arrays as a single rejection', () => {

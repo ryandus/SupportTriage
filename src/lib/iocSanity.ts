@@ -38,7 +38,7 @@ const IOC_TYPE_SET: Readonly<Record<IocType, true>> = {
 
 export const IOC_TYPES = Object.keys(IOC_TYPE_SET) as IocType[];
 
-function isIocType(value: unknown): value is IocType {
+export function isIocType(value: unknown): value is IocType {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(IOC_TYPE_SET, value);
 }
 
@@ -149,7 +149,8 @@ function normalizeIndicator(type: IocRecord['type'], raw: string): string {
 export function sanitizeIocRecord(ioc: Partial<IocRecord>): IocRecord {
   if (!ioc.type) throw new Error('sanitizeIocRecord: missing required field "type"');
   // Input usually arrives as untyped JSON (e.g. model output), so enforce the union at runtime.
-  if (!isIocType(ioc.type)) throw new Error(`sanitizeIocRecord: unknown IOC type "${String(ioc.type)}"`);
+  // The offending value is deliberately not echoed: error text may end up in logs.
+  if (!isIocType(ioc.type)) throw new Error('sanitizeIocRecord: unknown IOC type');
   if (typeof ioc.indicator !== 'string' || ioc.indicator.trim() === '') {
     throw new Error('sanitizeIocRecord: missing required field "indicator"');
   }
@@ -182,10 +183,15 @@ export function sanitizeIocRecord(ioc: Partial<IocRecord>): IocRecord {
   return out;
 }
 
+/**
+ * Rejection metadata only. The raw record is intentionally NOT included so no
+ * caller can log indicator values or source excerpts (zero-retention boundary).
+ * `type` is set only when it is a valid IocType; otherwise null.
+ */
 export interface IocRejection {
   index: number;
+  type: IocType | null;
   reason: string;
-  record: unknown;
 }
 
 /**
@@ -199,7 +205,7 @@ export function sanitizeIocBatch(
 ): IocRecord[] {
   if (raw === undefined || raw === null) return [];
   if (!Array.isArray(raw)) {
-    onReject({ index: -1, reason: 'iocs payload is not an array', record: raw });
+    onReject({ index: -1, type: null, reason: 'iocs payload is not an array' });
     return [];
   }
   const out: IocRecord[] = [];
@@ -210,7 +216,12 @@ export function sanitizeIocBatch(
       }
       out.push(sanitizeIocRecord(item as Partial<IocRecord>));
     } catch (err) {
-      onReject({ index, reason: err instanceof Error ? err.message : String(err), record: item });
+      const rawType = typeof item === 'object' && item !== null ? (item as { type?: unknown }).type : undefined;
+      onReject({
+        index,
+        type: isIocType(rawType) ? rawType : null,
+        reason: err instanceof Error ? err.message : 'unknown error',
+      });
     }
   });
   return out;
