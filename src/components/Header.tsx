@@ -44,13 +44,13 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base sm:text-lg font-bold text-slate-100 tracking-tight">
-                  TriageFlow — DFIR
+                  SupportTriage
                 </h1>
                 <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
                   <Activity className="w-3 h-3" /> Enterprise API Triage
                 </span>
                 <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                  TriageFlow – DFIR • Engineered by R. C. Hanks
+                  SupportTriage • Engineered by R. C. Hanks
                 </span>
               </div>
               <p className="text-xs text-slate-400">
