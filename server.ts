@@ -99,7 +99,7 @@ app.post('/api/triage', async (req, res) => {
       ? incidentInput.investigatedFacts.map(f => `- [${f.status.toUpperCase()}] ${f.label}${f.details ? ` (${f.details})` : ''}`).join('\n')
       : 'No verified facts yet.';
 
-    const systemPrompt = `You are TriageFlow — A SaaS Playbook, a Senior SaaS Staff Support Engineer and Incident Commander specialized in enterprise API triage, cloud storage ingestion pipelines, worker queues, and downstream partner clearinghouse delivery workflows.
+    const systemPrompt = `You are SupportTriage, a Senior SaaS Staff Support Engineer and Incident Commander specialized in enterprise API triage, cloud storage ingestion pipelines, worker queues, and downstream partner clearinghouse delivery workflows.
 Generate an operational triage guide.
 
 CRITICAL INSTRUCTIONS ON INVESTIGATED FACTS:
@@ -425,7 +425,7 @@ app.post('/api/analyze-complaint', async (req, res) => {
   const ai = getAI();
   if (ai) {
     try {
-      const complaintPrompt = `You are TriageFlow — A SaaS Playbook, a Senior SaaS Support Engineering Lead specializing in high-reliability API architectures, storage presigned assets (S3/GCS), and downstream partner clearance/gateways.
+      const complaintPrompt = `You are SupportTriage, a Senior SaaS Support Engineering Lead specializing in high-reliability API architectures, storage presigned assets (S3/GCS), and downstream partner clearance/gateways.
 A client / partner submitted this specific complaint:
 "${complaintText}"
 
@@ -610,8 +610,8 @@ Perform a deep technical triage to:
       endpointUrl: '/v1/reports',
       httpMethod: 'POST'
     },
-    recommendedClientReply: `Hello,\n\nThank you for providing the details for report ${repId}.\nOur Tier 3 Engineering team is investigating this under ${pipelineLayer.split(':')[0]}.\nPreliminary root cause: ${likelyIssues[0]?.title}.\nImmediate check: ${likelyIssues[0]?.immediateCheck}\n\nWe will update you within 30 minutes.\n\nBest regards,\nTriageFlow — A SaaS Playbook\n\nTriageFlow — A SaaS Playbook • Engineered by R. Hanks`,
-    recommendedInternalNextStep: `Correlate report ID ${repId} across Datadog APM and investigate ${pipelineLayer}.\n\n---\nTriageFlow — A SaaS Playbook • Engineered by R. Hanks`
+    recommendedClientReply: `Hello,\n\nThank you for providing the details for report ${repId}.\nOur Tier 3 Engineering team is investigating this under ${pipelineLayer.split(':')[0]}.\nPreliminary root cause: ${likelyIssues[0]?.title}.\nImmediate check: ${likelyIssues[0]?.immediateCheck}\n\nWe will update you within 30 minutes.\n\nBest regards,\nSupportTriage\n\nSupportTriage • Engineered by R. Hanks`,
+    recommendedInternalNextStep: `Correlate report ID ${repId} across Datadog APM and investigate ${pipelineLayer}.\n\n---\nSupportTriage • Engineered by R. Hanks`
   });
 });
 
@@ -632,7 +632,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`TriageFlow — A SaaS Playbook server running on http://0.0.0.0:${PORT}`);
+    console.log(`SupportTriage server running on http://0.0.0.0:${PORT}`);
   });
 }
 
