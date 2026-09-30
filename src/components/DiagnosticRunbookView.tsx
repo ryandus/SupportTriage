@@ -87,7 +87,7 @@ export const DiagnosticRunbookView: React.FC<DiagnosticRunbookViewProps> = ({
     if (layerInfo?.commonErrors) {
       md += `- **Common Error Codes**: ${layerInfo.commonErrors.join(', ')}\n`;
     }
-    md += '\n---\n*TriageFlow – DFIR • Engineered by R. C. Hanks*\n';
+    md += '\n---\n*SupportTriage • Engineered by R. C. Hanks*\n';
 
     const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -170,7 +170,7 @@ export const DiagnosticRunbookView: React.FC<DiagnosticRunbookViewProps> = ({
             type="button"
             onClick={handleExportRunbookMarkdown}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-all hover:scale-[1.02] shadow-sm cursor-pointer ml-1"
-            title="Download Runbook markdown file (TriageFlow — A SaaS Playbook • Engineered by R. Hanks)"
+            title="Download Runbook markdown file (SupportTriage • Engineered by R. Hanks)"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Export (.md)</span>
@@ -630,7 +630,7 @@ export const DiagnosticRunbookView: React.FC<DiagnosticRunbookViewProps> = ({
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-slate-500">Operational Tooling</span>
           <span className="font-mono text-amber-400 font-semibold bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20 text-[11px] shadow-sm">
-            TriageFlow — A SaaS Playbook • Engineered by R. Hanks
+            SupportTriage • Engineered by R. Hanks
           </span>
         </div>
       </div>
