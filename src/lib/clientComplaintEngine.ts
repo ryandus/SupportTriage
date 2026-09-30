@@ -281,7 +281,7 @@ export function analyzeClientComplaintDeterministic(complaintText: string): Clie
 
 Thank you for reaching out and providing the details for incident/transaction ${reportId}.
 
-Our DFIR & Enterprise Triage Engineering team has conducted an initial automated pipeline triage:
+Our Enterprise Triage Engineering team has conducted an initial automated pipeline triage:
 • Identified Demarcation Domain: ${pipelineLayer.split(':')[0]}
 • Observed Symptom: ${detectedSymptoms[0] || summary}
 • Most Probable Root Cause: ${likelyIssues[0]?.title || 'Processing pipeline error'}
@@ -294,9 +294,9 @@ Immediate Verification Steps for Your Team:
 Our internal team is actively investigating this on our end and will follow up with an update within 30 minutes.
 
 Best regards,
-TriageFlow — DFIR Team
+SupportTriage Team
 
-TriageFlow – DFIR • Engineered by R. C. Hanks`;
+SupportTriage • Engineered by R. C. Hanks`;
 
   // Recommended Internal Next Step
   const recommendedInternalNextStep = `1. Cross-reference transaction ${reportId} in Datadog APM and PostgreSQL tasks table.
@@ -304,7 +304,7 @@ TriageFlow – DFIR • Engineered by R. C. Hanks`;
 3. Rule-out action: ${likelyIssues[0]?.suggestedAction || 'Verify service logs.'}
 
 ---
-TriageFlow – DFIR • Engineered by R. C. Hanks`;
+SupportTriage • Engineered by R. C. Hanks`;
 
   return {
     clientIdentity,
