@@ -383,7 +383,7 @@ export const ClientComplaintModal: React.FC<ClientComplaintModalProps> = ({
           <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between text-[11px] text-slate-400 gap-2">
             <span>SaaS Support Complaint Triage Engine</span>
             <span className="font-mono text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 shadow-sm">
-              TriageFlow — A SaaS Playbook • Engineered by R. Hanks
+              SupportTriage • Engineered by R. Hanks
             </span>
           </div>
         </div>
