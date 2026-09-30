@@ -253,7 +253,7 @@ Thank you for reporting this issue. To help our Tier 3 / Solutions Engineering t
 
 Please reply attaching the HAR file and screenshots. Thank you for your partnership!
 -----------------------------------------------------------------
-TriageFlow — A SaaS Playbook • Engineered by R. Hanks`;
+SupportTriage • Engineered by R. Hanks`;
 
   // 3. Evidentiary Ingestion Fields to Extract
   const evidentiaryFields = {
