@@ -113,7 +113,7 @@ export const IncidentHistoryDrawer: React.FC<IncidentHistoryDrawerProps> = ({
             <span className="text-[11px] text-slate-500">No triage sessions logged</span>
           )}
           <span className="font-mono text-amber-400/90 font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 text-[10px]">
-            TriageFlow — A SaaS Playbook • Engineered by R. Hanks
+            SupportTriage • Engineered by R. Hanks
           </span>
         </div>
       </div>
