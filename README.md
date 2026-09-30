@@ -2,9 +2,7 @@
 [![Status: Active](https://img.shields.io/badge/Status-Production%20Prototype-success.svg)](#)
 [![Focus: Technical Support & DFIR/Ops](https://img.shields.io/badge/Focus-SaaS%20Ops%20%7C%20Incident%20Triage-orange.svg)](#)
 
-> Part of the **[CustodyFlow](https://github.com/ryandus/custodyflow)** suite: defensible DFIR and eDiscovery workflow tools.
-
-> **TriageFlow** is a structured, browser-based triage engine and decision-tree system built for SaaS customer support, solutions engineering, and incident response teams. It translates ambiguous incoming customer telemetry and ticket data into standardized severity matrices (P1–P4), reproducible diagnostic paths, and validated escalation packages.
+> **SupportTriage** is a structured, browser-based triage engine and decision-tree system built for SaaS customer support, solutions engineering, and incident response teams. It translates ambiguous incoming customer telemetry and ticket data into standardized severity matrices (P1–P4), reproducible diagnostic paths, and validated escalation packages.
 
 ---
 
@@ -15,14 +13,14 @@ SaaS support and technical operations teams routinely encounter three critical o
 2. **Premature Engineering Escalation:** Up to 40% of technical escalations reach Tier 3 or Core Engineering without reproducible steps, client-side browser/network logs, or verified account configuration states.
 3. **SLA Friction:** Lack of dynamic step-by-step diagnostic workflows inflates Mean Time to Acknowledge (MTTA) and Mean Time to Resolution (MTTR).
 
-**TriageFlow** enforces structured intake, heuristic-based severity scoring, and guardrailed playbooks directly at the point of ingestion.
+**SupportTriage** enforces structured intake, heuristic-based severity scoring, and guardrailed playbooks directly at the point of ingestion.
 
 ---
 
 ## 🚀 Access & Deployment
 
 ### Live Interactive Engine
-* **Interactive Triage Tool:** [Launch TriageFlow](https://ryandus.github.io/TriageFlow-DFIR/)
+* **Interactive Triage Tool:** [Launch SupportTriage](https://ryandus.github.io/SupportTriage/)
 ---
 
 ## ⚡ Key Capabilities
@@ -89,7 +87,7 @@ Generates structured Jira/Linear Markdown"]
 ---
 ##🚦 Severity & SLA Framework
 
-TriageFlow benchmarks issues against standard SaaS operational tiers:
+SupportTriage benchmarks issues against standard SaaS operational tiers:
 
 | Severity | Qualification Criteria | Target Ack (MTTA) | Target Update |
 | :--- | :--- | :--- | :--- |
