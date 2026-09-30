@@ -1,6 +1,6 @@
 {
-  "name": "triageflow-saas-playbook",
-  "description": "TriageFlow — A SaaS Playbook: Universal SaaS Support Engineering & API Triage Assistant engineered by R. Hanks for API triage, ingestion pipelines, secure endpoints, and webhook delivery workflows.",
+  "name": "supporttriage",
+  "description": "SupportTriage: Universal SaaS Support Engineering & API Triage Assistant engineered by R. Hanks for API triage, ingestion pipelines, secure endpoints, and webhook delivery workflows.",
   "private": true,
   "version": "0.0.0",
   "type": "module",
