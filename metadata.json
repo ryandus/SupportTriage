@@ -1,6 +1,6 @@
 {
-  "name": "TriageFlow — DFIR",
-  "description": "Enterprise Digital Forensics, Incident Response (DFIR) & API Telemetry Triage Assistant engineered by R. C. Hanks for API triage, ingestion pipelines, secure endpoints, and root-cause elimination workflows.",
+  "name": "SupportTriage",
+  "description": "SaaS support and API telemetry triage assistant engineered by R. C. Hanks for API triage, ingestion pipelines, secure endpoints, and root-cause elimination workflows.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
