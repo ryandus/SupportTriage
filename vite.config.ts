@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/TriageFlow-DFIR/',
+    base: '/SupportTriage/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
