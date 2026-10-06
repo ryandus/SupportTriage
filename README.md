@@ -10,7 +10,7 @@
 
 SaaS support and technical operations teams routinely encounter three critical operational failures:
 1. **Queue Drift & Inconsistent Severity Tagging:** Priority assignments vary widely by agent sentiment or customer urgency phrasing rather than business impact and service impairment.
-2. **Premature Engineering Escalation:** Up to 40% of technical escalations reach Tier 3 or Core Engineering without reproducible steps, client-side browser/network logs, or verified account configuration states.
+2. **Premature Engineering Escalation:** Technical escalations reach Tier 3 or Core Engineering without reproducible steps, client-side browser/network logs, or verified account configuration states.
 3. **SLA Friction:** Lack of dynamic step-by-step diagnostic workflows inflates Mean Time to Acknowledge (MTTA) and Mean Time to Resolution (MTTR).
 
 **SupportTriage** enforces structured intake, heuristic-based severity scoring, and guardrailed playbooks directly at the point of ingestion.
@@ -38,7 +38,7 @@ SaaS support and technical operations teams routinely encounter three critical o
 
 ## 🏗️ Architecture Overview
 
-The system is designed with a lightweight, decoupled architecture to ensure deterministic state evaluation, rapid client-side execution, and clean data boundaries.
+The system is designed with a lightweight, decoupled architecture to ensure deterministic state evaluation and clean data boundaries.
 
 ```mermaid
 flowchart TD
@@ -85,7 +85,8 @@ Generates structured Jira/Linear Markdown"]
 | **Handover Synthesizer** | Formats clean, structured markdown payloads ready for bug trackers (Jira, GitHub Issues, Linear) or ticketing platforms (Zendesk, Freshdesk). | Zero-overhead inter-team communication. |
 
 ---
-##🚦 Severity & SLA Framework
+
+## 🚦 Severity & SLA Framework
 
 SupportTriage benchmarks issues against standard SaaS operational tiers:
 
@@ -99,7 +100,7 @@ SupportTriage benchmarks issues against standard SaaS operational tiers:
 
 ## 🔒 Security & Data Hygiene
 
-* **Zero-Retention Model:** Client-side processing ensures ticket data, API tokens, and customer metadata remain ephemeral in local runtime memory.
+* **Data handling:** The deterministic triage engine works without any outside service. The optional Express server (`server.ts`) can call Google's Gemini API to draft triage text, parse pasted logs, and analyze complaints. That happens only when `GEMINI_API_KEY` is set, and it sends the pasted incident text to Google. Without a key, the server returns the deterministic engine's output. Do not paste real customer data, credentials, or PII into any deployment that has AI enabled.
 * **PII/Token Stripping Guidance:** Built-in validation checks advise agents to strip `Authorization: Bearer`, secret keys, and personal identifying information before staging logs into escalation tickets.
 ---
 
